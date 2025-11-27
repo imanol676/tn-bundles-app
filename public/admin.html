@@ -155,9 +155,25 @@
     ];
 
     document.addEventListener('DOMContentLoaded', () => {
+        installScript();
         loadConfig();
         setupProductSearch();
     });
+
+    async function installScript() {
+        try {
+            console.log('[Admin] Instalando script en tienda...');
+            const res = await fetch('/admin/install-script', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ store_id: storeId })
+            });
+            const result = await res.json();
+            console.log('[Admin] Script instalado:', result);
+        } catch (e) {
+            console.error('[Admin] Error instalando script:', e);
+        }
+    }
 
     function setupProductSearch() {
         const searchInput = document.getElementById('productSearch');

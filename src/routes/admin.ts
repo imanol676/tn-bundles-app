@@ -7,8 +7,61 @@ import {
 import { getStoreToken } from '../store/storeRepo';
 import { createOrUpdatePromotion, searchProducts, createOrUpdateDiscountVariant, deleteDiscountVariant, createCartDiscount, getStoreDomain } from '../services/tiendanubeService';
 import { env } from '../config/env';
+import fetch from 'node-fetch';
 
 export const adminRouter = Router();
+
+// --- POST: Instalar script en la tienda ---
+adminRouter.post('/install-script', async (req: Request, res: Response) => {
+  const storeId = Number(req.body.store_id);
+  
+  if (!storeId) {
+    return res.status(400).json({ error: 'store_id requerido' });
+  }
+
+  const token = getStoreToken(storeId) || env.tnAccessToken;
+  
+  try {
+    // Verificar si ya existe el script
+    const checkResponse = await fetch(`https://api.tiendanube.com/v1/${storeId}/scripts`, {
+      headers: {
+        'Authentication': `bearer ${token}`,
+        'User-Agent': 'TN Bundles App (imanolkremis505@gmail.com)'
+      }
+    });
+    
+    const scripts = await checkResponse.json() as any[];
+    const existingScript = scripts.find(s => s.src && s.src.includes('widget.js'));
+    
+    if (existingScript) {
+      console.log(`[Install] Script ya existe con ID ${existingScript.id}`);
+      return res.json({ success: true, scriptId: existingScript.id, message: 'Script ya instalado' });
+    }
+    
+    // Crear el script
+    const createResponse = await fetch(`https://api.tiendanube.com/v1/${storeId}/scripts`, {
+      method: 'POST',
+      headers: {
+        'Authentication': `bearer ${token}`,
+        'User-Agent': 'TN Bundles App (imanolkremis505@gmail.com)',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        src: `${env.appBaseUrl}/widget.js`,
+        event: 'onload',
+        where: 'store'
+      })
+    });
+    
+    const script = await createResponse.json();
+    console.log(`[Install] ✅ Script instalado con ID ${script.id}`);
+    
+    res.json({ success: true, scriptId: script.id, message: 'Script instalado correctamente' });
+  } catch (error: any) {
+    console.error(`[Install] Error:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // --- GET: Buscar productos (Upsells) ---
 adminRouter.get('/products/search', async (req: Request, res: Response) => {
