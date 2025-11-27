@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instalar Script - TN Bundles</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f6f8fa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; }
+        .card { max-width: 600px; margin: 0 auto; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .btn-primary { background: #ff4fa3; border: none; font-weight: 600; }
+        .btn-primary:hover { background: #e63e8d; }
+        #result { margin-top: 20px; padding: 15px; border-radius: 8px; display: none; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 6px; font-size: 12px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2 class="text-center mb-4">🔧 Instalar Widget Script</h2>
+    
+    <p class="text-muted">Este instalador intentará agregar el script del widget a tu tienda.</p>
+    
+    <div class="mb-3">
+        <label class="form-label">Store ID:</label>
+        <input type="number" id="storeId" class="form-control" value="6973970">
+    </div>
+    
+    <button onclick="installScript()" class="btn btn-primary w-100" id="installBtn">
+        Instalar Script
+    </button>
+    
+    <div id="result"></div>
+</div>
+
+<script>
+    async function installScript() {
+        const storeId = document.getElementById('storeId').value;
+        const btn = document.getElementById('installBtn');
+        const resultDiv = document.getElementById('result');
+        
+        btn.disabled = true;
+        btn.innerText = 'Instalando...';
+        resultDiv.style.display = 'none';
+        
+        try {
+            const response = await fetch('/admin/install-script', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ store_id: parseInt(storeId) })
+            });
+            
+            const result = await response.json();
+            
+            resultDiv.style.display = 'block';
+            
+            if (result.success) {
+                resultDiv.className = 'success';
+                resultDiv.innerHTML = `
+                    <strong>✅ Script Instalado Correctamente</strong><br>
+                    <strong>Script ID:</strong> ${result.scriptId}<br>
+                    <strong>Mensaje:</strong> ${result.message}<br><br>
+                    <small>Ahora ve a una página de producto en tu tienda y refresca (F5). El widget debería aparecer.</small>
+                `;
+            } else {
+                resultDiv.className = 'error';
+                resultDiv.innerHTML = `
+                    <strong>❌ Error al instalar</strong><br>
+                    ${result.error || 'Error desconocido'}<br>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            }
+        } catch (error) {
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'error';
+            resultDiv.innerHTML = `
+                <strong>❌ Error de conexión</strong><br>
+                ${error.message}
+            `;
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Instalar Script';
+        }
+    }
+</script>
+
+</body>
+</html>
