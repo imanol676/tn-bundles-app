@@ -88,16 +88,55 @@
                     <div class="section-title">Packs, Descuentos y Upsells</div>
                     <div id="packsContainer"></div>
                 </div>
+
+                <!-- Personalización de Colores -->
+                <div class="tn-card">
+                    <div class="section-title"><i class="fas fa-palette me-2"></i>Personalización de Colores</div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Color Botón Principal</label>
+                            <input type="color" class="form-control form-control-color w-100" id="primaryColor" value="#007bff" onchange="updatePreview()">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Color Botón Hover</label>
+                            <input type="color" class="form-control form-control-color w-100" id="primaryHoverColor" value="#0056b3" onchange="updatePreview()">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Color de Fondo</label>
+                            <input type="color" class="form-control form-control-color w-100" id="backgroundColor" value="#ffffff" onchange="updatePreview()">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Color de Texto</label>
+                            <input type="color" class="form-control form-control-color w-100" id="textColor" value="#333333" onchange="updatePreview()">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Color de Precios</label>
+                            <input type="color" class="form-control form-control-color w-100" id="priceColor" value="#28a745" onchange="updatePreview()">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Color de Descuentos</label>
+                            <input type="color" class="form-control form-control-color w-100" id="discountColor" value="#dc3545" onchange="updatePreview()">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Color de Bordes</label>
+                            <input type="color" class="form-control form-control-color w-100" id="borderColor" value="#dee2e6" onchange="updatePreview()">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Color Pack Destacado</label>
+                            <input type="color" class="form-control form-control-color w-100" id="highlightColor" value="#ffc107" onchange="updatePreview()">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="resetColors()"><i class="fas fa-undo me-1"></i>Restaurar Colores por Defecto</button>
+                    </div>
+                </div>
             </form>
         </div>
 
         <div class="col-lg-4">
-            <div class="tn-card">
-                <div class="section-title">Vista previa</div>
-                <div class="text-muted text-center py-4">
-                    <i class="fas fa-mobile-alt fa-2x mb-2"></i>
-                    <p>La vista previa se actualizará en tu tienda real.</p>
-                </div>
+            <div class="tn-card" style="position: sticky; top: 20px;">
+                <div class="section-title"><i class="fas fa-eye me-2"></i>Vista Previa en Vivo</div>
+                <div id="previewContainer" style="background: #f8f9fa; padding: 16px; border-radius: 8px; min-height: 400px;"></div>
             </div>
         </div>
     </div>
@@ -181,10 +220,25 @@
             const config = data || {};
             document.getElementById('basePrice').value = config.basePrice || 0;
             document.getElementById('enabled').checked = config.enabled !== false;
+            
+            // Cargar colores si existen
+            if (config.theme) {
+                document.getElementById('primaryColor').value = config.theme.primaryColor || '#007bff';
+                document.getElementById('primaryHoverColor').value = config.theme.primaryHoverColor || '#0056b3';
+                document.getElementById('backgroundColor').value = config.theme.backgroundColor || '#ffffff';
+                document.getElementById('textColor').value = config.theme.textColor || '#333333';
+                document.getElementById('priceColor').value = config.theme.priceColor || '#28a745';
+                document.getElementById('discountColor').value = config.theme.discountColor || '#dc3545';
+                document.getElementById('borderColor').value = config.theme.borderColor || '#dee2e6';
+                document.getElementById('highlightColor').value = config.theme.highlightColor || '#ffc107';
+            }
+            
             renderPacks(config.packs || defaultPacks);
+            updatePreview(); // Actualizar vista previa al cargar
         } catch (e) {
             console.error(e);
             renderPacks(defaultPacks);
+            updatePreview();
         } finally {
             document.getElementById('loading').style.display = 'none';
         }
@@ -498,7 +552,17 @@
             productId: productId,
             basePrice: Number(document.getElementById('basePrice').value),
             enabled: document.getElementById('enabled').checked,
-            packs: packs
+            packs: packs,
+            theme: {
+                primaryColor: document.getElementById('primaryColor').value,
+                primaryHoverColor: document.getElementById('primaryHoverColor').value,
+                backgroundColor: document.getElementById('backgroundColor').value,
+                textColor: document.getElementById('textColor').value,
+                priceColor: document.getElementById('priceColor').value,
+                discountColor: document.getElementById('discountColor').value,
+                borderColor: document.getElementById('borderColor').value,
+                highlightColor: document.getElementById('highlightColor').value
+            }
         };
 
         try {
@@ -644,6 +708,124 @@
             }, 1500);
         });
     }
+    
+    // Restaurar colores por defecto
+    function resetColors() {
+        document.getElementById('primaryColor').value = '#007bff';
+        document.getElementById('primaryHoverColor').value = '#0056b3';
+        document.getElementById('backgroundColor').value = '#ffffff';
+        document.getElementById('textColor').value = '#333333';
+        document.getElementById('priceColor').value = '#28a745';
+        document.getElementById('discountColor').value = '#dc3545';
+        document.getElementById('borderColor').value = '#dee2e6';
+        document.getElementById('highlightColor').value = '#ffc107';
+        updatePreview();
+    }
+    
+    // Actualizar vista previa en vivo
+    function updatePreview() {
+        const previewContainer = document.getElementById('previewContainer');
+        
+        // Obtener colores
+        const colors = {
+            primary: document.getElementById('primaryColor')?.value || '#007bff',
+            primaryHover: document.getElementById('primaryHoverColor')?.value || '#0056b3',
+            background: document.getElementById('backgroundColor')?.value || '#ffffff',
+            text: document.getElementById('textColor')?.value || '#333333',
+            price: document.getElementById('priceColor')?.value || '#28a745',
+            discount: document.getElementById('discountColor')?.value || '#dc3545',
+            border: document.getElementById('borderColor')?.value || '#dee2e6',
+            highlight: document.getElementById('highlightColor')?.value || '#ffc107'
+        };
+        
+        // Obtener datos de packs
+        const packsData = [];
+        document.querySelectorAll('.pack-container').forEach(pack => {
+            const label = pack.querySelector('.inp-label')?.value || 'Pack';
+            const quantity = pack.querySelector('.inp-qty')?.value || 1;
+            const discountValue = pack.querySelector('.inp-disc-val')?.value || 0;
+            const discountType = pack.querySelector('.inp-disc-type')?.value || 'percent';
+            const highlight = pack.querySelector('.inp-highlight')?.checked || false;
+            
+            packsData.push({ label, quantity, discountValue, discountType, highlight });
+        });
+        
+        // Precio base ejemplo
+        const basePrice = selectedProduct?.price || 10000;
+        
+        // Generar HTML de vista previa
+        let previewHTML = `
+            <div style="background: ${colors.background}; padding: 16px; border-radius: 8px; border: 2px solid ${colors.border}; font-family: Arial, sans-serif;">
+                <h3 style="color: ${colors.text}; font-size: 18px; margin: 0 0 16px 0;">Selecciona tu pack</h3>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+        `;
+        
+        packsData.forEach((pack, idx) => {
+            const calcPrice = pack.discountType === 'percent' 
+                ? basePrice * (1 - pack.discountValue / 100) * pack.quantity
+                : basePrice * pack.quantity - pack.discountValue;
+            
+            const borderStyle = pack.highlight 
+                ? `3px solid ${colors.highlight}` 
+                : `1px solid ${colors.border}`;
+            
+            const bgStyle = pack.highlight 
+                ? `linear-gradient(135deg, ${colors.highlight}15, transparent)` 
+                : 'transparent';
+            
+            previewHTML += `
+                <div style="border: ${borderStyle}; border-radius: 8px; padding: 12px; cursor: pointer; background: ${bgStyle}; transition: all 0.2s;">
+                    ${pack.highlight ? `<div style="background: ${colors.highlight}; color: #000; font-size: 11px; font-weight: bold; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px;">⭐ MÁS ELEGIDO</div>` : ''}
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="flex: 1;">
+                            <div style="color: ${colors.text}; font-weight: bold; font-size: 14px;">${pack.label}</div>
+                            ${pack.discountValue > 0 ? `<div style="color: ${colors.discount}; font-size: 12px; font-weight: 600;">-${pack.discountValue}${pack.discountType === 'percent' ? '%' : ' ARS'} OFF</div>` : ''}
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: ${colors.price}; font-weight: bold; font-size: 16px;">$${calcPrice.toLocaleString('es-AR', {maximumFractionDigits: 0})}</div>
+                            ${pack.discountValue > 0 ? `<div style="color: #999; font-size: 11px; text-decoration: line-through;">$${(basePrice * pack.quantity).toLocaleString('es-AR', {maximumFractionDigits: 0})}</div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        previewHTML += `
+                </div>
+                <button style="
+                    width: 100%; 
+                    background: ${colors.primary}; 
+                    color: white; 
+                    border: none; 
+                    padding: 14px; 
+                    border-radius: 8px; 
+                    font-weight: bold; 
+                    font-size: 16px; 
+                    margin-top: 16px; 
+                    cursor: pointer;
+                    transition: background 0.2s;
+                " onmouseover="this.style.background='${colors.primaryHover}'" onmouseout="this.style.background='${colors.primary}'">
+                    🛒 Agregar al Carrito
+                </button>
+            </div>
+        `;
+        
+        previewContainer.innerHTML = previewHTML;
+    }
+    
+    // Actualizar vista previa cuando cambian los inputs de packs
+    document.addEventListener('input', (e) => {
+        if (e.target.closest('.pack-container')) {
+            updatePreview();
+        }
+    });
+    
+    // Actualizar vista previa al cargar config
+    const originalRenderPacks = renderPacks;
+    renderPacks = function(...args) {
+        originalRenderPacks.apply(this, args);
+        setTimeout(updatePreview, 100);
+    };
     
     // Agregar estilos de animación
     const style = document.createElement('style');

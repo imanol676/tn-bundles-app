@@ -37,12 +37,14 @@ export interface UpsellConfig {
 
 // Config de colores / tema
 export interface ThemeConfig {
-  primaryColor: string;
-  backgroundColor: string;    // Nota: en admin era 'background' a veces, asegúrate que coincida
-  textColor: string;
-  tagPopularColor: string;
-  tagFreeShippingColor: string;
-  // accentColor lo quité si no lo usas en el admin, o déjalo si lo usas
+  primaryColor: string;           // Color de botones principales
+  primaryHoverColor: string;      // Color hover de botones
+  backgroundColor: string;         // Fondo del widget
+  textColor: string;              // Color de texto general
+  priceColor: string;             // Color de precios
+  discountColor: string;          // Color de descuentos/badges
+  borderColor: string;            // Color de bordes
+  highlightColor: string;         // Color del pack destacado
 }
 
 // Config completa para un producto en una tienda

@@ -140,18 +140,27 @@
       let basePrice = dynamicPrice > 0 ? dynamicPrice : (domPrice > 0 ? domPrice : (config.basePrice || 0));
       if (basePrice === 0) basePrice = 1000; 
 
+      // Colores del tema
+      const theme = config.theme || {};
+      const primaryColor = theme.primaryColor || '#ff4fa3';
+      const primaryHoverColor = theme.primaryHoverColor || '#e63e8d';
+      const backgroundColor = theme.backgroundColor || '#fff';
+      const textColor = theme.textColor || '#333';
+      const priceColor = theme.priceColor || '#28a745';
+      const discountColor = theme.discountColor || '#dc3545';
+      const borderColor = theme.borderColor || '#e5e5e5';
+      const highlightColor = theme.highlightColor || '#ffc107';
+
       const container = document.createElement('div');
       container.id = 'tn-bundle-widget';
-      container.style.cssText = `border: 1px solid #e5e5e5; border-radius: 16px; padding: 16px; margin: 16px 0; background: ${config.theme?.backgroundColor || '#fff'}; box-shadow: 0 2px 8px rgba(0,0,0,0.04); font-family: sans-serif;`;
+      container.style.cssText = `border: 1px solid ${borderColor}; border-radius: 16px; padding: 16px; margin: 16px 0; background: ${backgroundColor}; box-shadow: 0 2px 8px rgba(0,0,0,0.04); font-family: sans-serif;`;
 
       container.innerHTML = `
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-            <h3 style="margin:0; font-size:18px; color:#222">Llevá & Ahorrá</h3>
+            <h3 style="margin:0; font-size:18px; color:${textColor}">Llevá & Ahorrá</h3>
             <div style="flex:1; height:1px; background:#f0f0f0; margin-left:12px;"></div>
         </div>
       `;
-
-      const primaryColor = config.theme?.primaryColor || '#ff4fa3';
 
       (config.packs || []).forEach(function (pack, index) {
         const qty = pack.quantity || 1;
@@ -257,7 +266,11 @@
         card.className = 'tn-pack-card';
         card.dataset.packId = pack.id;
         
-        card.style.cssText = `border: 1px solid #e0e0e0; border-radius: 12px; padding: 12px; margin-bottom: 10px; background: #fff; cursor: pointer; transition: all 0.2s;`;
+        const isHighlighted = pack.highlight;
+        const cardBorder = isHighlighted ? `2px solid ${highlightColor}` : `1px solid ${borderColor}`;
+        const cardBg = isHighlighted ? `linear-gradient(135deg, ${highlightColor}15, ${backgroundColor})` : backgroundColor;
+        
+        card.style.cssText = `border: ${cardBorder}; border-radius: 12px; padding: 12px; margin-bottom: 10px; background: ${cardBg}; cursor: pointer; transition: all 0.2s;`;
         
         card.onclick = (e) => {
             if(e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT' && !e.target.closest('.tn-upsell-row')) {
@@ -266,7 +279,7 @@
         };
 
         let badgesHtml = '';
-        if (pack.highlight) badgesHtml += `<span style="background:${primaryColor}; color:#fff; border-radius:99px; padding:2px 8px; font-size:11px; font-weight:bold;">POPULAR</span>`;
+        if (pack.highlight) badgesHtml += `<span style="background:${highlightColor}; color:#000; border-radius:99px; padding:2px 8px; font-size:11px; font-weight:bold;">⭐ POPULAR</span>`;
         
         // HEADER CON PRECIO TACHADO
         // Nota: Usamos la clase .tn-old-price para poder referenciarla en el JS si necesitamos actualizarla, aunque en este diseño el precio tachado del pack NO cambia con el upsell.
@@ -274,8 +287,8 @@
             <div style="display:flex; align-items:center; justify-content:space-between;">
                 <div style="display:flex; align-items:center; flex-wrap:wrap; gap: 8px;">
                     <div style="display:flex; align-items:center;">
-                        <input type="radio" name="tn-selected-pack" value="${pack.id}" style="margin-right:8px; transform:scale(1.2);" ${index === 0 ? 'checked' : ''}>
-                        <span style="font-weight:bold; color:#222;">${pack.label}</span>
+                        <input type="radio" name="tn-selected-pack" value="${pack.id}" style="margin-right:8px; transform:scale(1.2); accent-color:${primaryColor};" ${index === 0 ? 'checked' : ''}>
+                        <span style="font-weight:bold; color:${textColor};">${pack.label}</span>
                     </div>
                     
                     ${ahorroInicial > 0 ? `
@@ -290,12 +303,12 @@
             
             <div style="margin-top:6px; margin-left: 24px;">
                 <div style="display:flex; align-items:baseline; gap:6px; flex-wrap:wrap;">
-                    <span class="tn-display-unit" style="color:${primaryColor}; font-weight:800; font-size:20px;">$ ${formatARS(perUnit)} c/u</span>
+                    <span class="tn-display-unit" style="color:${priceColor}; font-weight:800; font-size:20px;">$ ${formatARS(perUnit)} c/u</span>
                     <span class="tn-display-total" style="color:#666; font-size:13px; font-weight:500;">(Total: $ ${formatARS(packTotalOnly)})</span>
                 </div>
                 
                 <div style="font-size:12px; margin-top:2px;">
-                    ${ahorroInicial > 0 ? `<span style="color:#00c853; font-weight:600;">Ahorrás $ ${formatARS(ahorroInicial)}</span>` : ''}
+                    ${ahorroInicial > 0 ? `<span style="color:${discountColor}; font-weight:600;">Ahorrás $ ${formatARS(ahorroInicial)}</span>` : ''}
                 </div>
             </div>
 
@@ -364,7 +377,10 @@
 
       const btn = document.createElement('button');
       btn.innerText = 'AGREGAR AL CARRITO';
-      btn.style.cssText = `margin-top:12px; width:100%; padding:14px; border:none; border-radius:8px; background:${primaryColor}; color:#fff; font-size:14px; font-weight:bold; cursor:pointer; transition: opacity 0.2s;`;
+      btn.style.cssText = `margin-top:12px; width:100%; padding:14px; border:none; border-radius:8px; background:${primaryColor}; color:#fff; font-size:14px; font-weight:bold; cursor:pointer; transition: all 0.2s;`;
+      
+      btn.onmouseover = () => btn.style.background = primaryHoverColor;
+      btn.onmouseout = () => btn.style.background = primaryColor;
       
       btn.onclick = (e) => {
           e.preventDefault();
@@ -391,12 +407,17 @@
       const updateHighlight = () => {
           radios.forEach(r => {
               const c = r.closest('.tn-pack-card');
+              const pack = config.packs.find(p => p.id === r.value);
+              const isHighlighted = pack && pack.highlight;
+              
               if(r.checked) {
                   c.style.border = `2px solid ${primaryColor}`;
-                  c.style.backgroundColor = '#fff'; 
+                  c.style.backgroundColor = backgroundColor; 
               } else {
-                  c.style.border = '1px solid #e0e0e0';
-                  c.style.backgroundColor = '#fff';
+                  const defaultBorder = isHighlighted ? `2px solid ${highlightColor}` : `1px solid ${borderColor}`;
+                  const defaultBg = isHighlighted ? `linear-gradient(135deg, ${highlightColor}15, ${backgroundColor})` : backgroundColor;
+                  c.style.border = defaultBorder;
+                  c.style.backgroundColor = defaultBg;
               }
           });
       };
