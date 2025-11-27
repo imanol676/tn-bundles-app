@@ -1,15 +1,42 @@
-// Simulación de base de datos en memoria
+import fs from 'fs';
+import path from 'path';
+
+// Base de datos persistente en database.json
+const DB_PATH = path.join(__dirname, '../../database.json');
+
 interface StoreData {
   accessToken: string;
 }
 
-const stores = new Map<number, StoreData>();
+function readDatabase(): any {
+  try {
+    const data = fs.readFileSync(DB_PATH, 'utf-8');
+    return JSON.parse(data);
+  } catch (e) {
+    return {};
+  }
+}
+
+function writeDatabase(data: any) {
+  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+}
 
 export function saveStore(storeId: number, accessToken: string) {
-  stores.set(storeId, { accessToken });
-  console.log(`[StoreRepo] Tienda ${storeId} guardada en memoria.`);
+  const db = readDatabase();
+  const storeKey = `store_${storeId}`;
+  
+  db[storeKey] = {
+    storeId,
+    accessToken,
+    updatedAt: new Date().toISOString()
+  };
+  
+  writeDatabase(db);
+  console.log(`[StoreRepo] ✅ Tienda ${storeId} guardada en database.json`);
 }
 
 export function getStoreToken(storeId: number): string | undefined {
-  return stores.get(storeId)?.accessToken;
+  const db = readDatabase();
+  const storeKey = `store_${storeId}`;
+  return db[storeKey]?.accessToken;
 }
