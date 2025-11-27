@@ -46,8 +46,9 @@ adminRouter.post('/install-script', async (req: Request, res: Response) => {
       }
     });
     
-    const scripts = await checkResponse.json() as any[];
-    const existingScript = scripts.find(s => s.src && s.src.includes('widget.js'));
+    const data = await checkResponse.json() as any;
+    const scripts = data.result || [];
+    const existingScript = scripts.find((s: any) => s.src && s.src.includes('widget.js'));
     
     if (existingScript) {
       console.log(`[Install] Script ya existe con ID ${existingScript.id}`);
