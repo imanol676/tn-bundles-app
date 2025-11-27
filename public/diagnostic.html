@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico - TN Bundles</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f6f8fa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; }
+        .card { max-width: 900px; margin: 0 auto; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .btn-primary { background: #ff4fa3; border: none; font-weight: 600; }
+        .btn-primary:hover { background: #e63e8d; }
+        .check { color: #28a745; font-weight: bold; }
+        .error { color: #dc3545; font-weight: bold; }
+        .warning { color: #ffc107; font-weight: bold; }
+        pre { background: #f4f4f4; padding: 15px; border-radius: 6px; font-size: 12px; overflow-x: auto; }
+        .test-item { padding: 15px; border: 1px solid #eee; border-radius: 8px; margin: 10px 0; }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #ff4fa3; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; margin-right: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2 class="text-center mb-4">🔍 Diagnóstico TN Bundles</h2>
+    
+    <div class="mb-3">
+        <label class="form-label">Store ID:</label>
+        <input type="number" id="storeId" class="form-control" value="6973970">
+    </div>
+    
+    <button onclick="runDiagnostic()" class="btn btn-primary w-100 mb-4">
+        Ejecutar Diagnóstico
+    </button>
+    
+    <div id="results"></div>
+</div>
+
+<script>
+    const TOKEN = '4ae9116317598bd89083a3bd755ef6059652e7a48a3f1da1';
+    
+    async function runDiagnostic() {
+        const storeId = document.getElementById('storeId').value;
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = '';
+        
+        // Test 1: Verificar scripts instalados
+        await testScripts(storeId, resultsDiv);
+        
+        // Test 2: Verificar widget.js accesible
+        await testWidgetJS(resultsDiv);
+        
+        // Test 3: Verificar configuración de productos
+        await testProductConfig(storeId, resultsDiv);
+    }
+    
+    async function testScripts(storeId, resultsDiv) {
+        addTest(resultsDiv, 'test1', '1. Verificando scripts instalados...', 'loading');
+        
+        try {
+            const response = await fetch(`https://api.tiendanube.com/v1/${storeId}/scripts`, {
+                headers: {
+                    'Authentication': `bearer ${TOKEN}`,
+                    'User-Agent': 'TN Bundles Diagnostic'
+                }
+            });
+            
+            if (!response.ok) {
+                updateTest('test1', `❌ Error ${response.status}: ${response.statusText}`, 'error');
+                return;
+            }
+            
+            const scripts = await response.json();
+            const bundleScript = scripts.find(s => s.src && s.src.includes('widget.js'));
+            
+            if (bundleScript) {
+                updateTest('test1', 
+                    `✅ Script instalado correctamente<br>
+                    <strong>ID:</strong> ${bundleScript.id}<br>
+                    <strong>URL:</strong> ${bundleScript.src}<br>
+                    <strong>Event:</strong> ${bundleScript.event}<br>
+                    <strong>Where:</strong> ${bundleScript.where}`,
+                    'check'
+                );
+            } else {
+                updateTest('test1', 
+                    `❌ Script NO encontrado<br>
+                    <strong>Scripts encontrados:</strong> ${scripts.length}<br>
+                    <button class="btn btn-sm btn-primary mt-2" onclick="installScript(${storeId})">Instalar Script Ahora</button>`,
+                    'error'
+                );
+            }
+        } catch (error) {
+            updateTest('test1', `❌ Error: ${error.message}`, 'error');
+        }
+    }
+    
+    async function testWidgetJS(resultsDiv) {
+        addTest(resultsDiv, 'test2', '2. Verificando widget.js accesible...', 'loading');
+        
+        try {
+            const response = await fetch('https://tn-bundles-af9iu731q-imanolkremis505-4614s-projects.vercel.app/widget.js');
+            const text = await response.text();
+            
+            if (text.includes('TN Bundles') || text.includes('Widget')) {
+                updateTest('test2', 
+                    `✅ Widget.js accesible<br>
+                    <strong>Tamaño:</strong> ${(text.length / 1024).toFixed(2)} KB<br>
+                    <strong>Versión detectada:</strong> ${text.match(/v\d+/)?.[0] || 'N/A'}`,
+                    'check'
+                );
+            } else {
+                updateTest('test2', `⚠️ Widget.js carga pero el contenido parece incorrecto`, 'warning');
+            }
+        } catch (error) {
+            updateTest('test2', `❌ Error: ${error.message}`, 'error');
+        }
+    }
+    
+    async function testProductConfig(storeId, resultsDiv) {
+        addTest(resultsDiv, 'test3', '3. Verificando configuración de productos...', 'loading');
+        
+        try {
+            const response = await fetch(`/admin/config?store_id=${storeId}&product_id=308563864`);
+            const config = await response.json();
+            
+            if (config && config.packs && config.packs.length > 0) {
+                updateTest('test3', 
+                    `✅ Producto configurado<br>
+                    <strong>Producto ID:</strong> ${config.productId}<br>
+                    <strong>Packs:</strong> ${config.packs.length}<br>
+                    <strong>Habilitado:</strong> ${config.enabled ? 'Sí' : 'No'}`,
+                    'check'
+                );
+            } else {
+                updateTest('test3', `⚠️ No hay configuración de packs`, 'warning');
+            }
+        } catch (error) {
+            updateTest('test3', `❌ Error: ${error.message}`, 'error');
+        }
+    }
+    
+    async function installScript(storeId) {
+        if (!confirm('¿Instalar el script en la tienda?')) return;
+        
+        try {
+            const response = await fetch(`https://api.tiendanube.com/v1/${storeId}/scripts`, {
+                method: 'POST',
+                headers: {
+                    'Authentication': `bearer ${TOKEN}`,
+                    'User-Agent': 'TN Bundles Diagnostic',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    src: 'https://tn-bundles-af9iu731q-imanolkremis505-4614s-projects.vercel.app/widget.js',
+                    event: 'onload',
+                    where: 'store'
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                alert('✅ Script instalado correctamente! ID: ' + result.id);
+                runDiagnostic();
+            } else {
+                alert('❌ Error: ' + JSON.stringify(result));
+            }
+        } catch (error) {
+            alert('❌ Error: ' + error.message);
+        }
+    }
+    
+    function addTest(container, id, message, status) {
+        const div = document.createElement('div');
+        div.id = id;
+        div.className = 'test-item';
+        div.innerHTML = `<div class="${status}">${status === 'loading' ? '<span class="spinner"></span>' : ''}${message}</div>`;
+        container.appendChild(div);
+    }
+    
+    function updateTest(id, message, status) {
+        const div = document.getElementById(id);
+        if (div) {
+            div.innerHTML = `<div class="${status}">${message}</div>`;
+        }
+    }
+</script>
+
+</body>
+</html>
