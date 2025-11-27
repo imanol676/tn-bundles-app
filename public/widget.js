@@ -268,9 +268,8 @@
         
         const isHighlighted = pack.highlight;
         const cardBorder = isHighlighted ? `2px solid ${highlightColor}` : `1px solid ${borderColor}`;
-        const cardBg = isHighlighted ? `linear-gradient(135deg, ${highlightColor}15, ${backgroundColor})` : backgroundColor;
         
-        card.style.cssText = `border: ${cardBorder}; border-radius: 12px; padding: 12px; margin-bottom: 10px; background: ${cardBg}; cursor: pointer; transition: all 0.2s;`;
+        card.style.cssText = `border: ${cardBorder}; border-radius: 12px; padding: 12px; margin-bottom: 10px; background: ${backgroundColor}; cursor: pointer; transition: all 0.2s;`;
         
         card.onclick = (e) => {
             if(e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT' && !e.target.closest('.tn-upsell-row')) {
@@ -415,9 +414,8 @@
                   c.style.backgroundColor = backgroundColor; 
               } else {
                   const defaultBorder = isHighlighted ? `2px solid ${highlightColor}` : `1px solid ${borderColor}`;
-                  const defaultBg = isHighlighted ? `linear-gradient(135deg, ${highlightColor}15, ${backgroundColor})` : backgroundColor;
                   c.style.border = defaultBorder;
-                  c.style.backgroundColor = defaultBg;
+                  c.style.backgroundColor = backgroundColor;
               }
           });
       };

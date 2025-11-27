@@ -766,15 +766,11 @@
                 : basePrice * pack.quantity - pack.discountValue;
             
             const borderStyle = pack.highlight 
-                ? `3px solid ${colors.highlight}` 
+                ? `2px solid ${colors.highlight}` 
                 : `1px solid ${colors.border}`;
             
-            const bgStyle = pack.highlight 
-                ? `linear-gradient(135deg, ${colors.highlight}15, transparent)` 
-                : 'transparent';
-            
             previewHTML += `
-                <div style="border: ${borderStyle}; border-radius: 8px; padding: 12px; cursor: pointer; background: ${bgStyle}; transition: all 0.2s;">
+                <div style="border: ${borderStyle}; border-radius: 8px; padding: 12px; cursor: pointer; background: transparent; transition: all 0.2s;">
                     ${pack.highlight ? `<div style="background: ${colors.highlight}; color: #000; font-size: 11px; font-weight: bold; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px;">⭐ MÁS ELEGIDO</div>` : ''}
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div style="flex: 1;">
