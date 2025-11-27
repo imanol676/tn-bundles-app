@@ -27,6 +27,15 @@
     return Number(value).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  function hexToRGB(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
+  }
+
   if (document.readyState === 'complete') {
     startPolling(0);
   } else {
@@ -278,7 +287,7 @@
         };
 
         let badgesHtml = '';
-        if (pack.highlight) badgesHtml += `<span style="background:${highlightColor}; color:#000; border-radius:99px; padding:2px 8px; font-size:11px; font-weight:bold;">⭐ POPULAR</span>`;
+        if (pack.highlight) badgesHtml += `<span style="background:${primaryColor}; color:#fff; border-radius:99px; padding:2px 8px; font-size:11px; font-weight:bold;">⭐ POPULAR</span>`;
         
         // HEADER CON PRECIO TACHADO
         // Nota: Usamos la clase .tn-old-price para poder referenciarla en el JS si necesitamos actualizarla, aunque en este diseño el precio tachado del pack NO cambia con el upsell.
@@ -411,9 +420,11 @@
               
               if(r.checked) {
                   c.style.border = `2px solid ${primaryColor}`;
-                  c.style.backgroundColor = backgroundColor; 
+                  // Agregar fondo sutil al seleccionado
+                  const primaryRGB = hexToRGB(primaryColor);
+                  c.style.backgroundColor = primaryRGB ? `rgba(${primaryRGB.r}, ${primaryRGB.g}, ${primaryRGB.b}, 0.08)` : `${primaryColor}15`;
               } else {
-                  const defaultBorder = isHighlighted ? `2px solid ${highlightColor}` : `1px solid ${borderColor}`;
+                  const defaultBorder = isHighlighted ? `2px solid ${primaryColor}` : `1px solid ${borderColor}`;
                   c.style.border = defaultBorder;
                   c.style.backgroundColor = backgroundColor;
               }
