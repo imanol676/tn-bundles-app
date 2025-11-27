@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración de Bundles</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body { background-color: #f6f8fa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .tn-card { background: white; border: 1px solid #dce2e6; border-radius: 8px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .tn-header { margin-bottom: 24px; }
+        .section-title { font-size: 16px; font-weight: 600; color: #333; margin-bottom: 16px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+        .pack-container { background: #f9fbfc; border: 1px solid #eef2f5; padding: 16px; border-radius: 6px; margin-bottom: 16px; position: relative; }
+        .btn-primary { background-color: #ff4fa3; border-color: #ff4fa3; font-weight: 600; }
+        .btn-primary:hover { background-color: #e63e8d; border-color: #e63e8d; }
+        
+        /* Estilos del Buscador de Upsells */
+        .upsell-search-wrapper { position: relative; }
+        .upsell-results { 
+            position: absolute; top: 100%; left: 0; right: 0; 
+            background: white; border: 1px solid #ddd; border-radius: 0 0 8px 8px; 
+            max-height: 250px; overflow-y: auto; z-index: 9999; display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .upsell-item { 
+            padding: 10px 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #eee; transition: background 0.1s;
+        }
+        .upsell-item:hover { background-color: #f0f0f0; }
+        .upsell-item img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #eee; }
+        .selected-upsell { 
+            display: flex; align-items: center; gap: 10px; padding: 10px; 
+            background: #fff0f6; border: 1px solid #ffcae0; border-radius: 6px; margin-top: 8px; 
+        }
+        .remove-upsell { cursor: pointer; color: #dc3545; margin-left: auto; }
+
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #ff4fa3; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div id="loading"><div class="spinner"></div></div>
+
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="tn-header d-flex justify-content-between align-items-center">
+                <h2 class="h4 m-0">Configuración de Packs</h2>
+                <button onclick="saveConfig()" class="btn btn-primary">Guardar Cambios</button>
+            </div>
+
+            <form id="configForm">
+                <!-- Selector de Producto -->
+                <div class="tn-card">
+                    <div class="section-title">Producto a Configurar</div>
+                    <div class="mb-3">
+                        <label class="form-label">Buscar producto:</label>
+                        <div class="upsell-search-wrapper">
+                            <input type="text" class="form-control" id="productSearch" placeholder="Escribe el nombre del producto...">
+                            <div class="upsell-results" id="productResults"></div>
+                        </div>
+                    </div>
+                    <div id="selectedProductDisplay" style="display: none; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 2px solid #e91e63;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <img id="selectedProductImage" src="" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 2px solid #fff;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: bold; color: #333;" id="selectedProductName"></div>
+                                <div style="font-size: 12px; color: #666;">ID: <span id="selectedProductId"></span></div>
+                                <div style="font-size: 12px; color: #e91e63; font-weight: 600;">✓ Producto seleccionado</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tn-card">
+                    <div class="section-title">General</div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="enabled" checked>
+                        <label class="form-check-label" for="enabled">Activar Widget en la tienda</label>
+                    </div>
+                    <input type="hidden" id="basePrice" value="0">
+                </div>
+
+                <div class="tn-card">
+                    <div class="section-title">Packs, Descuentos y Upsells</div>
+                    <div id="packsContainer"></div>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="tn-card">
+                <div class="section-title">Vista previa</div>
+                <div class="text-muted text-center py-4">
+                    <i class="fas fa-mobile-alt fa-2x mb-2"></i>
+                    <p>La vista previa se actualizará en tu tienda real.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const storeId = params.get('store_id') || '123456';
+    let productId = params.get('product_id') || '0';
+    let selectedProduct = null; // Guardar info del producto seleccionado
+
+    const defaultPacks = [
+        { id: 'pack1', label: 'Por unidad', quantity: 1, discountValue: 0, discountType: 'none', highlight: false, upsell: null },
+        { id: 'pack2', label: 'Pack X2', quantity: 2, discountValue: 10, discountType: 'percent', highlight: true, upsell: null },
+        { id: 'pack3', label: 'Pack X3', quantity: 3, discountValue: 20, discountType: 'percent', highlight: false, upsell: null }
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadConfig();
+        setupProductSearch();
+    });
+
+    function setupProductSearch() {
+        const searchInput = document.getElementById('productSearch');
+        const resultsDiv = document.getElementById('productResults');
+        
+        searchInput.addEventListener('input', async (e) => {
+            const query = e.target.value.trim();
+            
+            if (query.length < 2) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+            
+            try {
+                const res = await fetch(`/admin/products/search?store_id=${storeId}&q=${encodeURIComponent(query)}`);
+                const products = await res.json();
+                
+                if (products.length === 0) {
+                    resultsDiv.innerHTML = '<div style="padding: 12px; color: #999;">No se encontraron productos</div>';
+                    resultsDiv.style.display = 'block';
+                    return;
+                }
+                
+                resultsDiv.innerHTML = products.map(p => `
+                    <div class="upsell-item" onclick="selectProduct(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.image}', ${p.price})">
+                        <img src="${p.image}" onerror="this.src='https://via.placeholder.com/40?text=Img'">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 500; font-size: 13px;">${p.name}</div>
+                            <div style="font-size: 11px; color: #999;">$ ${Number(p.price).toLocaleString('es-AR')}</div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                resultsDiv.style.display = 'block';
+            } catch (e) {
+                console.error(e);
+            }
+        });
+    }
+    
+    function selectProduct(id, name, image, price) {
+        productId = id;
+        selectedProduct = { id, name, image, price };
+        
+        document.getElementById('selectedProductImage').src = image;
+        document.getElementById('selectedProductName').textContent = name;
+        document.getElementById('selectedProductId').textContent = id;
+        document.getElementById('selectedProductDisplay').style.display = 'block';
+        document.getElementById('productResults').style.display = 'none';
+        document.getElementById('productSearch').value = '';
+        
+        // Recargar configuración para este producto
+        loadConfig();
+    }
+
+    async function loadConfig() {
+        try {
+            const res = await fetch(`/admin/config?store_id=${storeId}&product_id=${productId}`);
+            const data = await res.json();
+            const config = data || {};
+            document.getElementById('basePrice').value = config.basePrice || 0;
+            document.getElementById('enabled').checked = config.enabled !== false;
+            renderPacks(config.packs || defaultPacks);
+        } catch (e) {
+            console.error(e);
+            renderPacks(defaultPacks);
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
+    }
+
+    function renderPacks(packs) {
+        const container = document.getElementById('packsContainer');
+        container.innerHTML = '';
+
+        packs.forEach((pack, index) => {
+            // Soporte para múltiples upsells (array)
+            const upsells = pack.upsells || (pack.upsell ? [pack.upsell] : []);
+            
+            const html = `
+                <div class="pack-container" data-id="${pack.id}">
+                    <div class="d-flex justify-content-between mb-2">
+                        <strong>Pack #${index + 1} (${pack.quantity} Unidades)</strong>
+                    </div>
+                    
+                    <div class="row mb-2">
+                        <div class="col-6">
+                            <label class="form-label">Etiqueta</label>
+                            <input type="text" class="form-control inp-label" value="${pack.label}">
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label">Desc. Valor</label>
+                            <input type="number" class="form-control inp-disc-val" value="${pack.discountValue}">
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select inp-disc-type">
+                                <option value="percent" ${pack.discountType === 'percent' ? 'selected' : ''}>%</option>
+                                <option value="fixed_amount" ${pack.discountType === 'fixed_amount' ? 'selected' : ''}>$</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN UPSELLS (Hasta 2) -->
+                    <div class="mt-3 pt-2 border-top">
+                        <label class="form-label text-primary"><i class="fas fa-gift"></i> Upsells (Productos Extra) - Máx. 2</label>
+                        
+                        <!-- Lista de upsells seleccionados -->
+                        <div id="upsells-list-${pack.id}">
+                            ${upsells.map((u, i) => renderSelectedUpsellHtml(pack.id, u, i)).join('')}
+                        </div>
+                        
+                        <!-- Botón para agregar upsell (solo si hay menos de 2) -->
+                        <div id="add-upsell-btn-${pack.id}" style="${upsells.length >= 2 ? 'display:none' : ''}">
+                            <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="showUpsellSearch('${pack.id}')">
+                                <i class="fas fa-plus"></i> Agregar Upsell
+                            </button>
+                        </div>
+                        
+                        <!-- Buscador (oculto por defecto) -->
+                        <div class="upsell-search-wrapper mt-2" id="search-wrapper-${pack.id}" style="display:none">
+                            <input type="text" class="form-control" 
+                                   placeholder="🔍 Buscar producto..." 
+                                   oninput="searchProduct(this, '${pack.id}')"
+                                   onfocus="searchProduct(this, '${pack.id}')">
+                            <div class="upsell-results" id="results-${pack.id}"></div>
+                            <button type="button" class="btn btn-sm btn-secondary mt-1" onclick="hideUpsellSearch('${pack.id}')">Cancelar</button>
+                        </div>
+                    </div>
+
+                    <div class="form-check mt-2">
+                        <input class="form-check-input inp-highlight" type="checkbox" id="hl-${pack.id}" ${pack.highlight ? 'checked' : ''}>
+                        <label class="form-check-label" for="hl-${pack.id}">Destacar</label>
+                    </div>
+                    <input type="hidden" class="inp-qty" value="${pack.quantity}">
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', html);
+        });
+        
+        // Cerrar dropdowns al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.upsell-search-wrapper')) {
+                document.querySelectorAll('.upsell-results').forEach(el => el.style.display = 'none');
+            }
+        });
+    }
+
+    let searchTimeout;
+    let lastQuery = {}; // Cache por packId
+
+    async function searchProduct(input, packId) {
+        const query = input.value;
+        const resultsDiv = document.getElementById(`results-${packId}`);
+        
+        clearTimeout(searchTimeout);
+        
+        // Si es focus sin texto, cargar inmediatamente (sin delay)
+        if (query.trim() === '' && !lastQuery[packId]) {
+            await loadProducts(packId, query, resultsDiv);
+            return;
+        }
+        
+        // Para búsquedas con texto, usar debounce
+        searchTimeout = setTimeout(async () => {
+            await loadProducts(packId, query, resultsDiv);
+        }, 300);
+    }
+    
+    async function loadProducts(packId, query, resultsDiv) {
+        resultsDiv.style.display = 'block';
+        resultsDiv.innerHTML = '<div class="p-2 text-muted"><i class="fas fa-spinner fa-spin"></i> Cargando productos...</div>';
+
+        console.log(`[Admin] Solicitando productos. Query: "${query}"`);
+
+        try {
+            const res = await fetch(`/admin/products/search?store_id=${storeId}&q=${encodeURIComponent(query)}`);
+            
+            if (!res.ok) throw new Error(`Error API: ${res.status}`);
+
+            const products = await res.json();
+            console.log('[Admin] Recibidos:', products);
+            
+            lastQuery[packId] = query; // Guardar última búsqueda
+
+            if (products.length === 0) {
+                resultsDiv.innerHTML = '<div class="p-2 text-muted">No se encontraron productos.</div>';
+            } else {
+                resultsDiv.innerHTML = products.map(p => `
+                    <div class="upsell-item" onclick='selectUpsell("${packId}", ${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+                        <img src="${p.image}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/40?text=📦'">
+                        <div style="flex:1">
+                            <div style="font-weight:600; font-size:14px;">${p.name}</div>
+                            <div style="font-size:12px; color:#666;">$ ${p.price}</div>
+                        </div>
+                        <i class="fas fa-plus-circle text-primary"></i>
+                    </div>
+                `).join('');
+            }
+        } catch (e) {
+            console.error("Error búsqueda:", e);
+            resultsDiv.innerHTML = `<div class="p-2 text-danger">Error: ${e.message}</div>`;
+        }
+    }
+
+    function selectUpsell(packId, product) {
+        const listDiv = document.getElementById(`upsells-list-${packId}`);
+        const currentUpsells = getPackUpsells(packId);
+        
+        if (currentUpsells.length >= 2) {
+            alert('Máximo 2 upsells por pack');
+            return;
+        }
+        
+        // Agregar con estado enabled por defecto
+        product.enabled = true;
+        currentUpsells.push(product);
+        
+        // Re-renderizar lista
+        listDiv.innerHTML = currentUpsells.map((u, i) => renderSelectedUpsellHtml(packId, u, i)).join('');
+        
+        // Ocultar buscador
+        hideUpsellSearch(packId);
+        
+        // Ocultar botón si ya hay 2
+        if (currentUpsells.length >= 2) {
+            document.getElementById(`add-upsell-btn-${packId}`).style.display = 'none';
+        }
+        
+        // Resetear cache
+        lastQuery[packId] = null;
+    }
+
+    function removeUpsell(packId, index) {
+        const listDiv = document.getElementById(`upsells-list-${packId}`);
+        const currentUpsells = getPackUpsells(packId);
+        
+        currentUpsells.splice(index, 1);
+        
+        // Re-renderizar
+        listDiv.innerHTML = currentUpsells.map((u, i) => renderSelectedUpsellHtml(packId, u, i)).join('');
+        
+        // Mostrar botón de agregar
+        document.getElementById(`add-upsell-btn-${packId}`).style.display = 'block';
+        
+        lastQuery[packId] = null;
+    }
+    
+    function toggleUpsell(packId, index) {
+        const currentUpsells = getPackUpsells(packId);
+        currentUpsells[index].enabled = !currentUpsells[index].enabled;
+        
+        // Re-renderizar
+        const listDiv = document.getElementById(`upsells-list-${packId}`);
+        listDiv.innerHTML = currentUpsells.map((u, i) => renderSelectedUpsellHtml(packId, u, i)).join('');
+    }
+    
+    function updateUpsellDiscount(packId, index, field, value) {
+        const currentUpsells = getPackUpsells(packId);
+        
+        if (field === 'value') {
+            currentUpsells[index].discountValue = parseFloat(value) || 0;
+        } else if (field === 'type') {
+            currentUpsells[index].discountType = value;
+        }
+        
+        // Re-renderizar
+        const listDiv = document.getElementById(`upsells-list-${packId}`);
+        listDiv.innerHTML = currentUpsells.map((u, i) => renderSelectedUpsellHtml(packId, u, i)).join('');
+    }
+    
+    function getPackUpsells(packId) {
+        const listDiv = document.getElementById(`upsells-list-${packId}`);
+        const dataAttr = listDiv.getAttribute('data-upsells');
+        return dataAttr ? JSON.parse(dataAttr) : [];
+    }
+    
+    function showUpsellSearch(packId) {
+        document.getElementById(`search-wrapper-${packId}`).style.display = 'block';
+        document.getElementById(`add-upsell-btn-${packId}`).style.display = 'none';
+    }
+    
+    function hideUpsellSearch(packId) {
+        document.getElementById(`search-wrapper-${packId}`).style.display = 'none';
+        document.getElementById(`results-${packId}`).style.display = 'none';
+        const currentUpsells = getPackUpsells(packId);
+        if (currentUpsells.length < 2) {
+            document.getElementById(`add-upsell-btn-${packId}`).style.display = 'block';
+        }
+    }
+
+    function renderSelectedUpsellHtml(packId, product, index) {
+        const isEnabled = product.enabled !== false;
+        const opacityStyle = isEnabled ? '' : 'opacity: 0.5;';
+        const discountValue = product.discountValue || 0;
+        const discountType = product.discountType || 'percent';
+        
+        // Actualizar el objeto product con los valores actuales
+        product.discountValue = discountValue;
+        product.discountType = discountType;
+        
+        // Guardar en data attribute para persistencia
+        setTimeout(() => {
+            const listDiv = document.getElementById(`upsells-list-${packId}`);
+            if (listDiv) {
+                const currentUpsells = [];
+                listDiv.querySelectorAll('.upsell-item-data').forEach(el => {
+                    currentUpsells.push(JSON.parse(el.value));
+                });
+                listDiv.setAttribute('data-upsells', JSON.stringify(currentUpsells));
+            }
+        }, 10);
+        
+        return `
+            <div class="selected-upsell mb-2" style="${opacityStyle} flex-wrap: wrap;">
+                <div class="form-check" style="margin-right: 10px;">
+                    <input class="form-check-input" type="checkbox" ${isEnabled ? 'checked' : ''} 
+                           onchange="toggleUpsell('${packId}', ${index})" 
+                           style="cursor: pointer; width: 20px; height: 20px;">
+                </div>
+                <img src="${product.image}" alt="${product.name}" width="40" onerror="this.src='https://via.placeholder.com/40?text=📦'">
+                <div style="flex:1; min-width: 120px;">
+                    <div style="font-weight:600; font-size:13px;">${product.name}</div>
+                    <div style="font-size:11px; color:#555;">
+                        $ ${product.price} ${isEnabled ? '✓ Activo' : '✗ Inactivo'}
+                    </div>
+                </div>
+                
+                <!-- Campos de descuento -->
+                <div style="display: flex; gap: 5px; align-items: center; margin-top: 5px; width: 100%; margin-left: 70px;">
+                    <label style="font-size: 11px; margin: 0; white-space: nowrap;">Descuento:</label>
+                    <input type="number" class="form-control form-control-sm upsell-discount-value" 
+                           value="${discountValue}" min="0" 
+                           onchange="updateUpsellDiscount('${packId}', ${index}, 'value', this.value)"
+                           style="width: 70px; font-size: 12px;" placeholder="0">
+                    <select class="form-select form-select-sm upsell-discount-type" 
+                            onchange="updateUpsellDiscount('${packId}', ${index}, 'type', this.value)"
+                            style="width: 70px; font-size: 12px;">
+                        <option value="percent" ${discountType === 'percent' ? 'selected' : ''}>%</option>
+                        <option value="absolute" ${discountType === 'absolute' ? 'selected' : ''}>$</option>
+                    </select>
+                    ${discountValue > 0 ? `<span style="font-size: 10px; color: #00c853; white-space: nowrap;">💰 Descuento ${discountValue}${discountType === 'percent' ? '%' : '$'}</span>` : ''}
+                </div>
+                
+                <i class="fas fa-trash-alt" onclick="removeUpsell('${packId}', ${index})" 
+                   style="cursor:pointer; color: #dc3545; margin-left: 10px;" title="Eliminar"></i>
+                <input type="hidden" class="upsell-item-data" value='${JSON.stringify(product)}'>
+            </div>
+        `;
+    }
+
+    async function saveConfig() {
+        const btn = document.querySelector('button[onclick="saveConfig()"]');
+        btn.innerText = 'Guardando...';
+        btn.disabled = true;
+
+        const packDivs = document.querySelectorAll('.pack-container');
+        const packs = Array.from(packDivs).map(div => {
+            // Obtener upsells del data attribute
+            const listDiv = div.querySelector(`[id^="upsells-list-"]`);
+            const upsellsData = listDiv?.getAttribute('data-upsells');
+            const upsells = upsellsData ? JSON.parse(upsellsData) : [];
+            
+            return {
+                id: div.dataset.id,
+                label: div.querySelector('.inp-label').value,
+                quantity: Number(div.querySelector('.inp-qty').value),
+                discountType: div.querySelector('.inp-disc-type').value,
+                discountValue: Number(div.querySelector('.inp-disc-val').value),
+                highlight: div.querySelector('.inp-highlight').checked,
+                upsells: upsells // Array de upsells
+            };
+        });
+
+        const payload = {
+            storeId: storeId,
+            productId: productId,
+            basePrice: Number(document.getElementById('basePrice').value),
+            enabled: document.getElementById('enabled').checked,
+            packs: packs
+        };
+
+        try {
+            const res = await fetch('/admin/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            if (res.ok) {
+                const result = await res.json();
+                
+                // Verificar si hay packs con descuento que requieren crear promociones
+                const packsWithDiscount = packs.filter(p => p.quantity > 1 && p.discountValue > 0);
+                
+                if (packsWithDiscount.length > 0 && result.storeUrl) {
+                    showPromotionInstructions(packsWithDiscount, result.storeUrl);
+                } else {
+                    alert('✅ Guardado con éxito');
+                }
+            } else {
+                alert('Error al guardar');
+            }
+        } catch (e) { 
+            console.error(e); 
+            alert('Error de red'); 
+        } finally { 
+            btn.innerText = 'Guardar Cambios'; 
+            btn.disabled = false; 
+        }
+    }
+    
+    function showPromotionInstructions(packs, storeUrl) {
+        const promotionsUrl = `${storeUrl}/admin/v2/promotions/new`;
+        
+        let instructionsHTML = packs.map((pack, idx) => `
+            <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #e91e63;">
+                <div style="font-weight: bold; color: #333; margin-bottom: 12px; font-size: 15px;">📦 Promoción ${idx + 1}: ${pack.label}</div>
+                <div style="font-size: 13px; color: #666; line-height: 2;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span>• <strong>Nombre:</strong></span>
+                        <code style="background: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; border: 1px solid #ddd;" onclick="copyToClipboard(this, 'Bundle Pack X${pack.quantity}')">Bundle Pack X${pack.quantity} 📋</code>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span>• <strong>Tipo:</strong></span>
+                        <span style="color: #e91e63; font-weight: 600;">Descuento progresivo por cantidad</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span>• <strong>Al comprar:</strong></span>
+                        <code style="background: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; border: 1px solid #ddd;" onclick="copyToClipboard(this, '${pack.quantity}')">${pack.quantity} productos 📋</code>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span>• <strong>Descuento:</strong></span>
+                        <code style="background: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; border: 1px solid #ddd;" onclick="copyToClipboard(this, '${pack.discountValue}')">${pack.discountValue}${pack.discountType === 'percent' ? '%' : ' pesos'} 📋</code>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>• <strong>Aplicar a:</strong></span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            ${selectedProduct ? `
+                                <img src="${selectedProduct.image}" style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;" onerror="this.style.display='none'">
+                                <span style="font-size: 11px; color: #666;">${selectedProduct.name}</span>
+                            ` : `<span style="color: #666;">Producto ID: ${productId}</span>`}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        `;
+        
+        modal.innerHTML = `
+            <div style="background: white; border-radius: 12px; max-width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3); animation: slideUp 0.3s ease;">
+                <div style="padding: 24px; border-bottom: 1px solid #eee;">
+                    <h2 style="margin: 0 0 8px 0; color: #333; font-size: 24px;">🎉 ¡Configuración Guardada!</h2>
+                    <p style="margin: 0; color: #666; font-size: 14px;">Ahora crea las promociones para activar los descuentos automáticos</p>
+                </div>
+                
+                <div style="padding: 24px;">
+                    <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                        <div style="font-weight: bold; color: #856404; margin-bottom: 8px;">⚠️ Acción requerida</div>
+                        <div style="font-size: 13px; color: #856404; line-height: 1.6;">
+                            Para que los descuentos se apliquen automáticamente en el carrito, debes crear las siguientes promociones en tu tienda Nube:
+                        </div>
+                    </div>
+                    
+                    ${instructionsHTML}
+                    
+                    <div style="margin-top: 20px; text-align: center;">
+                        <a href="${promotionsUrl}" target="_blank" 
+                           style="display: inline-block; background: #e91e63; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-right: 12px; box-shadow: 0 2px 8px rgba(233,30,99,0.3);">
+                            🚀 Crear Promociones Ahora
+                        </a>
+                        <button onclick="this.closest('.modal-wrapper').remove()" 
+                                style="background: #ddd; color: #333; padding: 14px 28px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                            Cerrar
+                        </button>
+                    </div>
+                    
+                    <div style="margin-top: 20px; padding: 12px; background: #e3f2fd; border-radius: 6px; font-size: 12px; color: #1976d2; line-height: 1.5;">
+                        💡 <strong>Tip:</strong> Haz click en los valores con 📋 para copiarlos automáticamente. Luego pégalos en el formulario de Tiendanube.
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        modal.className = 'modal-wrapper';
+        document.body.appendChild(modal);
+        
+        // Cerrar al hacer click fuera
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+    
+    function copyToClipboard(element, text) {
+        navigator.clipboard.writeText(text).then(() => {
+            const originalText = element.innerHTML;
+            element.innerHTML = '✅ Copiado!';
+            element.style.background = '#d4edda';
+            element.style.borderColor = '#28a745';
+            element.style.color = '#155724';
+            
+            setTimeout(() => {
+                element.innerHTML = originalText;
+                element.style.background = 'white';
+                element.style.borderColor = '#ddd';
+                element.style.color = 'inherit';
+            }, 1500);
+        });
+    }
+    
+    // Agregar estilos de animación
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+
+</body>
+</html>
