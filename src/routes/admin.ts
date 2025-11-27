@@ -11,6 +11,22 @@ import fetch from 'node-fetch';
 
 export const adminRouter = Router();
 
+// --- DEBUG: Ver token actual ---
+adminRouter.get('/debug/token', (req: Request, res: Response) => {
+  const storeId = Number(req.query.store_id);
+  if (!storeId) {
+    return res.status(400).json({ error: 'store_id requerido' });
+  }
+  
+  const token = getStoreToken(storeId) || env.tnAccessToken;
+  res.json({ 
+    storeId, 
+    hasToken: !!token,
+    tokenPreview: token ? token.substring(0, 10) + '...' : 'none',
+    fullToken: token 
+  });
+});
+
 // --- POST: Instalar script en la tienda ---
 adminRouter.post('/install-script', async (req: Request, res: Response) => {
   const storeId = Number(req.body.store_id);
