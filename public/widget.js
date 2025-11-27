@@ -18,8 +18,8 @@
   `;
   document.head.appendChild(style);
   
-  // CAMBIO: Versión 16 (Notificación de Cupón)
-  console.log("[TN Bundles] 🚀 Iniciando Widget v16 (Notificación Cupón)...");
+  // CAMBIO: Versión 17 (Compatible con onfirstinteraction)
+  console.log("[TN Bundles] 🚀 Iniciando Widget v17 (onfirstinteraction compatible)...");
 
   var MAX_RETRIES = 5;
 
@@ -36,10 +36,15 @@
     } : null;
   }
 
-  if (document.readyState === 'complete') {
-    startPolling(0);
+  // Iniciar inmediatamente si la página ya está cargada, o esperar al load
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    console.log("[TN Bundles] 📦 Página lista - iniciando polling...");
+    setTimeout(() => startPolling(0), 100);
   } else {
-    window.addEventListener('load', function() { startPolling(0); });
+    window.addEventListener('load', function() { 
+      console.log("[TN Bundles] 📦 Load event - iniciando polling...");
+      startPolling(0); 
+    });
   }
 
   // --- 1. DETECCIÓN DE DATOS ---
