@@ -50,8 +50,9 @@ authRouter.get('/callback', async (req, res) => {
                 }
             });
             
-            const existingScripts = await checkResponse.json() as any[];
-            const scriptExists = existingScripts.some(s => s.src && s.src.includes('widget.js'));
+            const scriptsData = await checkResponse.json() as any;
+            const existingScripts = scriptsData.result || [];
+            const scriptExists = existingScripts.some((s: any) => s.src && s.src.includes('widget.js'));
             
             if (scriptExists) {
                 console.log('ℹ️ Script ya existe en la tienda');
