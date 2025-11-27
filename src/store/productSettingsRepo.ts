@@ -92,11 +92,14 @@ export function getDefaultProductSettings(storeId: number, productId: number): P
     ],
     upsells: [],
     theme: {
-      primaryColor: '#ff4fa3',
-      textColor: '#222222',
+      primaryColor: '#007bff',
+      primaryHoverColor: '#0056b3',
       backgroundColor: '#ffffff',
-      tagPopularColor: '#ff4fa3',
-      tagFreeShippingColor: '#00c853'
+      textColor: '#333333',
+      priceColor: '#28a745',
+      discountColor: '#dc3545',
+      borderColor: '#dee2e6',
+      highlightColor: '#ffc107'
     }
   };
 }
