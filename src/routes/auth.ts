@@ -65,7 +65,7 @@ authRouter.get('/callback', async (req, res) => {
                     },
                     body: JSON.stringify({
                         src: scriptUrl,
-                        event: 'onload',
+                        event: 'onfirstinteraction',
                         where: 'store'
                     })
                 });
