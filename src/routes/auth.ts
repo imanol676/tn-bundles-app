@@ -41,26 +41,42 @@ authRouter.get('/callback', async (req, res) => {
         // --- INSTALAR SCRIPT EN LA TIENDA ---
         try {
             const scriptUrl = `${env.appBaseUrl}/widget.js`;
-            const scriptResponse = await fetch(`https://api.tiendanube.com/v1/${storeId}/scripts`, {
-                method: 'POST',
+            
+            // Verificar si ya existe el script
+            const checkResponse = await fetch(`https://api.tiendanube.com/v1/${storeId}/scripts`, {
                 headers: {
                     'Authentication': `bearer ${json.access_token}`,
-                    'Content-Type': 'application/json',
                     'User-Agent': 'TN Bundles App (contacto@example.com)'
-                },
-                body: JSON.stringify({
-                    src: scriptUrl,
-                    event: 'onload',
-                    where: 'product'
-                })
+                }
             });
             
-            if (scriptResponse.ok) {
-                const scriptResult = await scriptResponse.json() as any;
-                console.log('✅ Script instalado automáticamente en la tienda - ID:', scriptResult.id);
+            const existingScripts = await checkResponse.json() as any[];
+            const scriptExists = existingScripts.some(s => s.src && s.src.includes('widget.js'));
+            
+            if (scriptExists) {
+                console.log('ℹ️ Script ya existe en la tienda');
             } else {
-                const scriptError = await scriptResponse.text();
-                console.error('⚠️ Error instalando script:', scriptError);
+                const scriptResponse = await fetch(`https://api.tiendanube.com/v1/${storeId}/scripts`, {
+                    method: 'POST',
+                    headers: {
+                        'Authentication': `bearer ${json.access_token}`,
+                        'Content-Type': 'application/json',
+                        'User-Agent': 'TN Bundles App (contacto@example.com)'
+                    },
+                    body: JSON.stringify({
+                        src: scriptUrl,
+                        event: 'onload',
+                        where: 'store'
+                    })
+                });
+                
+                if (scriptResponse.ok) {
+                    const scriptResult = await scriptResponse.json() as any;
+                    console.log('✅ Script instalado automáticamente en la tienda - ID:', scriptResult.id);
+                } else {
+                    const scriptError = await scriptResponse.text();
+                    console.error('⚠️ Error instalando script:', scriptError);
+                }
             }
         } catch (scriptErr) {
             console.error('⚠️ Error instalando script:', scriptErr);

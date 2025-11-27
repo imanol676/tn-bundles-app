@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup - TN Bundles</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f6f8fa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; }
+        .card { max-width: 600px; margin: 0 auto; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .btn-primary { background: #ff4fa3; border: none; font-weight: 600; }
+        .btn-primary:hover { background: #e63e8d; }
+        .status { padding: 15px; border-radius: 8px; margin: 15px 0; }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 6px; font-size: 12px; }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #ff4fa3; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2 class="text-center mb-4">🚀 Setup TN Bundles</h2>
+    
+    <div id="step1">
+        <h5>Paso 1: Autenticar con Tiendanube</h5>
+        <p class="text-muted">Primero necesitamos obtener permisos para tu tienda.</p>
+        <div class="mb-3">
+            <label class="form-label">Store ID:</label>
+            <input type="number" id="storeId" class="form-control" value="6973970">
+        </div>
+        <button onclick="authorize()" class="btn btn-primary w-100">
+            Autorizar con Tiendanube
+        </button>
+    </div>
+    
+    <div id="step2" style="display: none;">
+        <h5>Paso 2: Instalando Script...</h5>
+        <div class="text-center mb-3">
+            <div class="spinner"></div>
+        </div>
+        <p class="text-muted text-center">Instalando el widget en tu tienda...</p>
+    </div>
+    
+    <div id="status"></div>
+    
+    <div id="step3" style="display: none;">
+        <h5 class="text-success">✅ ¡Listo!</h5>
+        <p>El script está instalado en tu tienda.</p>
+        <p class="text-muted">Para configurar productos, ve al panel admin:</p>
+        <a id="adminLink" href="#" class="btn btn-primary w-100 mt-3">
+            Ir al Panel Admin
+        </a>
+    </div>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const storeId = urlParams.get('store_id') || document.getElementById('storeId').value;
+    
+    // Si ya tenemos el código de autorización, instalar script
+    if (code && storeId) {
+        document.getElementById('step1').style.display = 'none';
+        document.getElementById('step2').style.display = 'block';
+        installScript(storeId);
+    }
+    
+    function authorize() {
+        const storeId = document.getElementById('storeId').value;
+        if (!storeId) {
+            alert('Por favor ingresa tu Store ID');
+            return;
+        }
+        
+        // Redirigir al OAuth de Tiendanube
+        const clientId = '23436';
+        const redirectUri = encodeURIComponent(window.location.origin + '/setup.html');
+        const authUrl = `https://www.tiendanube.com/apps/authorize/token?client_id=${clientId}&redirect_uri=${redirectUri}&state=${storeId}`;
+        
+        window.location.href = authUrl;
+    }
+    
+    async function installScript(storeId) {
+        try {
+            const response = await fetch('/admin/install-script', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ store_id: parseInt(storeId) })
+            });
+            
+            const result = await response.json();
+            
+            document.getElementById('step2').style.display = 'none';
+            
+            if (result.success) {
+                document.getElementById('step3').style.display = 'block';
+                document.getElementById('adminLink').href = `/admin.html?store_id=${storeId}&product_id=1`;
+                showStatus('success', `Script instalado correctamente (ID: ${result.scriptId})`);
+            } else {
+                showStatus('error', result.error || 'Error al instalar el script');
+            }
+        } catch (error) {
+            document.getElementById('step2').style.display = 'none';
+            showStatus('error', 'Error: ' + error.message);
+        }
+    }
+    
+    function showStatus(type, message) {
+        const statusDiv = document.getElementById('status');
+        statusDiv.className = 'status ' + type;
+        statusDiv.innerHTML = message;
+        statusDiv.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
