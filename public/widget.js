@@ -1,6 +1,6 @@
 (function () {
   var scriptSrc = document.currentScript ? document.currentScript.src : '';
-  var APP_BASE_URL = scriptSrc ? new URL(scriptSrc).origin : 'https://pretelephonic-tiesha-unteamed.ngrok-free.dev';
+  var APP_BASE_URL = scriptSrc ? new URL(scriptSrc).origin : 'https://tn-bundles-app.vercel.app';
   
   // Agregar animación CSS
   const style = document.createElement('style');
@@ -18,8 +18,8 @@
   `;
   document.head.appendChild(style);
   
-  // CAMBIO: Versión 17 (Compatible con onfirstinteraction)
-  console.log("[TN Bundles] 🚀 Iniciando Widget v17 (onfirstinteraction compatible)...");
+  // CAMBIO: Versión 18 (Vercel URL fixed)
+  console.log("[TN Bundles] 🚀 Iniciando Widget v18 (Vercel URL fixed)...");
 
   var MAX_RETRIES = 5;
 
