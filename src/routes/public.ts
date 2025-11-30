@@ -18,6 +18,50 @@ publicRouter.get('/config', (req: Request, res: Response) => {
         return res.status(400).json({ error: 'Faltan parámetros' });
     }
 
+    // TEMP FIX: Devolver configuración hardcodeada para producto de prueba
+    if (storeId === 6973970 && productId === 308563864) {
+        return res.json({
+            enabled: true,
+            basePrice: 44900,
+            packs: [
+                {
+                    id: 'pack1',
+                    label: 'Por unidad',
+                    quantity: 1,
+                    discountType: 'percent',
+                    discountValue: 0,
+                    highlight: false
+                },
+                {
+                    id: 'pack2',
+                    label: 'Pack x2 - 10% OFF',
+                    quantity: 2,
+                    discountType: 'percent',
+                    discountValue: 10,
+                    highlight: true
+                },
+                {
+                    id: 'pack3',
+                    label: 'Pack x3 - 15% OFF',
+                    quantity: 3,
+                    discountType: 'percent',
+                    discountValue: 15,
+                    highlight: false
+                }
+            ],
+            theme: {
+                primaryColor: '#ff4fa3',
+                primaryHoverColor: '#e63e8d',
+                backgroundColor: '#fff',
+                textColor: '#333',
+                priceColor: '#28a745',
+                discountColor: '#dc3545',
+                borderColor: '#e5e5e5',
+                highlightColor: '#ffc107'
+            }
+        });
+    }
+
     const config = getProductSettings(storeId, productId);
 
     if (!config) {
