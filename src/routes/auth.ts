@@ -38,77 +38,14 @@ authRouter.get('/callback', async (req, res) => {
         const storeId = Number(json.user_id);
         saveStore(storeId, json.access_token);
 
-        // --- INSTALAR SCRIPT EN LA TIENDA ---
-        try {
-            const scriptUrl = `${env.appBaseUrl}/widget.js`;
-            
-            // Verificar si ya existe el script
-            const checkResponse = await fetch(`https://api.tiendanube.com/v1/${storeId}/scripts`, {
-                headers: {
-                    'Authentication': `bearer ${json.access_token}`,
-                    'User-Agent': 'TN Bundles App (contacto@example.com)'
-                }
-            });
-            
-            const scriptsData = await checkResponse.json() as any;
-            const existingScripts = scriptsData.result || [];
-            const scriptExists = existingScripts.some((s: any) => s.src && s.src.includes('widget.js'));
-            
-            if (scriptExists) {
-                console.log('ℹ️ Script ya existe en la tienda');
-            } else {
-                const scriptResponse = await fetch(`https://api.tiendanube.com/v1/${storeId}/scripts`, {
-                    method: 'POST',
-                    headers: {
-                        'Authentication': `bearer ${json.access_token}`,
-                        'Content-Type': 'application/json',
-                        'User-Agent': 'TN Bundles App (contacto@example.com)'
-                    },
-                    body: JSON.stringify({
-                        src: scriptUrl,
-                        event: 'onfirstinteraction',
-                        where: 'store'
-                    })
-                });
-                
-                if (scriptResponse.ok) {
-                    const scriptResult = await scriptResponse.json() as any;
-                    console.log('✅ Script instalado automáticamente en la tienda - ID:', scriptResult.id);
-                } else {
-                    const scriptError = await scriptResponse.text();
-                    console.error('⚠️ Error instalando script:', scriptError);
-                }
-            }
-        } catch (scriptErr) {
-            console.error('⚠️ Error instalando script:', scriptErr);
-        }
-
-        // --- GUARDAR TOKEN EN .ENV AUTOMÁTICAMENTE ---
-        try {
-            const envPath = path.join(__dirname, '../../.env');
-            let envContent = fs.readFileSync(envPath, 'utf-8');
-            
-            // Actualizar o agregar TN_ACCESS_TOKEN
-            if (envContent.includes('TN_ACCESS_TOKEN=')) {
-                envContent = envContent.replace(/TN_ACCESS_TOKEN=.*/g, `TN_ACCESS_TOKEN=${json.access_token}`);
-            } else {
-                envContent += `\nTN_ACCESS_TOKEN=${json.access_token}`;
-            }
-            
-            fs.writeFileSync(envPath, envContent);
-            console.log('✅ Token guardado automáticamente en .env');
-        } catch (err) {
-            console.error('⚠️ Error guardando en .env:', err);
-        }
-
-        // --- MOSTRAR EN CONSOLA ---
         console.log('\n\n🎉🎉🎉 ¡INSTALACIÓN EXITOSA! 🎉🎉🎉');
         console.log('==================================================');
         console.log('🔑 NUEVO TOKEN:');
         console.log(json.access_token);
         console.log('==================================================');
-        console.log('✅ Token guardado en .env y en memoria');
+        console.log('✅ Token guardado en memoria');
         console.log('🏪 Store ID:', storeId);
+        console.log('📦 El script de Partner se instalará automáticamente');
         console.log('==================================================\n\n');
         
         return res.send(`
